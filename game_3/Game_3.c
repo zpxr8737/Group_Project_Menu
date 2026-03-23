@@ -7,6 +7,7 @@
 #include "stm32l4xx_hal.h"
 #include <stdio.h>
 
+
 extern ST7789V2_cfg_t cfg0;
 extern PWM_cfg_t pwm_cfg;      // LED PWM control
 extern Buzzer_cfg_t buzzer_cfg; // Buzzer control
