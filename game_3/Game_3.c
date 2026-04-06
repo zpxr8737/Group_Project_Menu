@@ -87,6 +87,35 @@ uint8_t active;
 uint32_t hitFlashEnd;
 } Target_t;
 
+typedef struct{
+GameState state;
+Target_t targets[maxTargets];
+uint8_t targetCount;
+Vector2D crosshair;
+uint16_t score;
+uint8_t score;
+uint32_t lastHitTime;
+float gameSpeed;
+float sensitivity;
+uint16_t highScore;
+uint32_t ledFlashEnd;
+} TargetGameEngine_t;
+
+//global initialisation
+static TargetGameEngine_t game;
+
+//helper functions
+
+static uint32_t randomGen(uint32_t max){
+    static uint32_t seed = 12345;
+    seed = seed * 1103515245 + 12345;
+    return (seed >> 16)%max;
+}
+
+static void startLedFlash(uint32_t durationMS){
+    game.ledFlashEnd = HAL_GetTick()+durationMS;
+    PWM_SetDuty(&pwm_cfg,80)
+}
 
 // Frame rate for this game (in milliseconds) - fastest game
 #define GAME3_FRAME_TIME_MS 16  // ~60 FPS (faster than others!)
