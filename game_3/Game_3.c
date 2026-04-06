@@ -11,21 +11,82 @@
 extern ST7789V2_cfg_t cfg0;
 extern PWM_cfg_t pwm_cfg;      // LED PWM control
 extern Buzzer_cfg_t buzzer_cfg; // Buzzer control
+extern Joystick_cfg_t joystick_cfg;
+extern Joystick_t joystick_data;
 
-/**
- * @brief Game 3 Implementation - Student can modify
- * 
- * EXAMPLE: Shows how to use both PWM LED and Buzzer together
- * This is a placeholder with a diagonal bouncing animation.
- * Replace this with your actual game logic!
- */
 
-// Game state - customize for your game
-static uint32_t animation_counter = 0;
-static int16_t moving_x = 0;
-static int16_t moving_y = 0;
-static int8_t dx = 2;
-static int8_t dy = 2;
+//game constants
+#define screenWidth 240
+#define screenHeight 240
+#define maxTargets 4
+#define targetRadius 10
+#define crosshairSize 8
+#define baseSpeed 120.0f
+#define fleeForce 200.0f
+#define comboTimeMS 1500
+#define highScoreReg 0
+
+
+//sprite
+static const uint8_t targetSprite[16][16] = {
+{255,255,255,2,2,2,2,2,2,2,2,2,255,255,255,255},
+{255,255,2,3,3,3,3,3,3,3,3,3,2,255,255,255},
+{255,2,3,3,3,3,3,3,3,3,3,3,3,2,255,255},
+{2,3,3,3,1,1,3,3,3,3,1,1,3,3,2,255},
+{2,3,3,1,1,1,3,3,3,3,1,1,1,3,2,255},
+{2,3,3,1,1,1,3,3,3,3,1,1,1,3,2,255},
+{2,3,3,3,1,1,3,3,3,3,1,1,3,3,2,255},
+{2,3,3,3,3,3,3,3,3,3,3,3,3,3,2,255},
+{2,3,3,3,3,3,3,3,3,3,3,3,3,3,2,255},
+{255,2,3,3,3,3,3,3,3,3,3,3,3,2,255,255},
+{255,255,2,3,3,3,3,3,3,3,3,3,2,255,255,255},
+{255,255,255,2,3,3,3,3,3,3,3,2,255,255,255,255},
+{255,255,255,255,2,3,3,3,3,3,2,255,255,255,255,255},
+{255,255,255,255,255,2,2,2,2,2,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255}
+};
+
+static const uint8_t crosshairSprite[16][16] = {
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255}
+};
+
+
+// game structures
+typedef enum{
+stateMenu,
+statePlaying,
+statePaused,
+StateGameOver
+} GameState;
+
+typedef struct{
+float x;
+float y;
+} Vector2D;
+
+typedef struct{
+Vector2D pos;
+Vector2D vel;
+uint8_t active;
+uint32_t hitFlashEnd;
+} Target_t;
+
 
 // Frame rate for this game (in milliseconds) - fastest game
 #define GAME3_FRAME_TIME_MS 16  // ~60 FPS (faster than others!)
