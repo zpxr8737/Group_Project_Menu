@@ -4,9 +4,11 @@
 #include "LCD.h"
 #include "PWM.h"
 #include "Buzzer.h"
+#include "Joystick.h"
 #include "stm32l4xx_hal.h"
+#include <math.h>
 #include <stdio.h>
-
+#include <string.h>
 
 extern ST7789V2_cfg_t cfg0;
 extern PWM_cfg_t pwm_cfg;      // LED PWM control
@@ -19,52 +21,17 @@ extern Joystick_t joystick_data;
 #define screenWidth 240
 #define screenHeight 240
 #define maxTargets 4
-#define targetRadius 10
-#define crosshairSize 8
 #define baseSpeed 120.0f
-#define fleeForce 200.0f
 #define comboTimeMS 1500
-#define highScoreReg 0
+#define gameFrameMS 16
+#define longPressMS 500
 
-
-//sprite
-static const uint8_t targetSprite[16][16] = {
-{255,255,255,2,2,2,2,2,2,2,2,2,255,255,255,255},
-{255,255,2,3,3,3,3,3,3,3,3,3,2,255,255,255},
-{255,2,3,3,3,3,3,3,3,3,3,3,3,2,255,255},
-{2,3,3,3,1,1,3,3,3,3,1,1,3,3,2,255},
-{2,3,3,1,1,1,3,3,3,3,1,1,1,3,2,255},
-{2,3,3,1,1,1,3,3,3,3,1,1,1,3,2,255},
-{2,3,3,3,1,1,3,3,3,3,1,1,3,3,2,255},
-{2,3,3,3,3,3,3,3,3,3,3,3,3,3,2,255},
-{2,3,3,3,3,3,3,3,3,3,3,3,3,3,2,255},
-{255,2,3,3,3,3,3,3,3,3,3,3,3,2,255,255},
-{255,255,2,3,3,3,3,3,3,3,3,3,2,255,255,255},
-{255,255,255,2,3,3,3,3,3,3,3,2,255,255,255,255},
-{255,255,255,255,2,3,3,3,3,3,2,255,255,255,255,255},
-{255,255,255,255,255,2,2,2,2,2,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255}
-};
-
-static const uint8_t crosshairSprite[16][16] = {
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
-{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
-{255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255}
-};
+//fruit types
+typdef enum{
+    fruitApple,
+    fruitOrange,
+    fruitWatermelon
+} FruitTpe;
 
 
 // game structures
@@ -85,6 +52,8 @@ Vector2D pos;
 Vector2D vel;
 uint8_t active;
 uint32_t hitFlashEnd;
+uint8_t type;
+uint8_t radius;
 } Target_t;
 
 typedef struct{
@@ -93,7 +62,8 @@ Target_t targets[maxTargets];
 uint8_t targetCount;
 Vector2D crosshair;
 uint16_t score;
-uint8_t score;
+uint8_t lives;
+uint8_t combo;
 uint32_t lastHitTime;
 float gameSpeed;
 float sensitivity;
@@ -101,8 +71,140 @@ uint16_t highScore;
 uint32_t ledFlashEnd;
 } TargetGameEngine_t;
 
+//sprites
+
+static const uint8_t appleSprite[16][16]={
+    {255,255,255,255,255,2,2,2,2,2,2,255,255,255,255,255},
+    {255,255,255,2,2,2,2,2,2,2,2,2,2,255,255,255},
+    {255,255,2,2,2,2,2,2,2,2,2,2,2,2,255,255},
+    {255,2,2,2,2,2,2,2,2,2,2,2,2,2,2,255},
+    {255,2,2,2,2,2,2,2,2,2,2,2,2,2,2,255},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {255,2,2,2,2,2,2,2,2,2,2,2,2,2,2,255},
+    {255,2,2,2,2,2,2,2,2,2,2,2,2,2,2,255},
+    {255,255,2,2,2,2,2,2,2,2,2,2,2,2,255,255},
+    {255,255,255,2,2,2,2,2,2,2,2,2,2,255,255,255},
+    {255,255,255,255,255,2,2,2,2,2,2,255,255,255,255,255},
+    {255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255}
+};
+
+static const uint8_t orangeSprite[16][16]{
+    {255,255,255,255,255,4,4,4,4,4,4,255,255,255,255,255},
+    {255,255,255,4,4,4,4,4,4,4,4,4,4,255,255,255},
+    {255,255,4,4,4,4,4,4,4,4,4,4,4,4,255,255},
+    {255,4,4,4,4,4,4,4,4,4,4,4,4,4,4,255},
+    {255,4,4,4,4,4,4,4,4,4,4,4,4,4,4,255},
+    {4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4},
+    {4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4},
+    {4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4},
+    {4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4},
+    {255,4,4,4,4,4,4,4,4,4,4,4,4,4,4,255},
+    {255,4,4,4,4,4,4,4,4,4,4,4,4,4,4,255},
+    {255,255,4,4,4,4,4,4,4,4,4,4,4,4,255,255},
+    {255,255,255,4,4,4,4,4,4,4,4,4,4,255,255,255},
+    {255,255,255,255,255,4,4,4,4,4,4,255,255,255,255,255},
+    {255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255}
+    
+};
+
+static const uint8_t watermelonSprite[16][16] ={
+    {255,255,255,255,255,3,3,3,3,3,3,255,255,255,255,255},
+    {255,255,255,3,3,3,3,3,3,3,3,3,3,255,255,255},
+    {255,255,3,3,3,3,3,3,3,3,3,3,3,3,255,255},
+    {255,3,3,3,3,3,3,3,3,3,3,3,3,3,3,255},
+    {255,3,3,3,3,3,3,3,3,3,3,3,3,3,3,255},
+    {3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3},
+    {3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3},
+    {3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3},
+    {3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3},
+    {255,3,3,3,3,3,3,3,3,3,3,3,3,3,3,255},
+    {255,3,3,3,3,3,3,3,3,3,3,3,3,3,3,255},
+    {255,255,3,3,3,3,3,3,3,3,3,3,3,3,255,255},
+    {255,255,255,3,3,3,3,3,3,3,3,3,3,255,255,255},
+    {255,255,255,255,255,3,3,3,3,3,3,255,255,255,255,255},
+    {255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255}
+
+};
+
+static const uint8_t crosshairSprite[16][16] = {
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255},
+    {255,255,255,255,255,255,255,2,2,255,255,255,255,255,255,255}
+};
+
+
 //global initialisation
 static TargetGameEngine_t game;
+
+// fruit properties
+
+static uint8_t getFruitRadius(uint8_t type){
+    switch(type){
+        case fruitApple: return 8;
+        case fruitOrange: return 10;
+        case fruitWatermelon: return 14;
+        default: return 10;
+    }
+}
+
+static uint16_t getFruitScore(uint8_t type){
+    switch(type){
+        case fruitApple: return 10;
+        case fruitOrange: return 15;
+        case fruitWatermelon: return 25;
+        default: return 10;
+    }
+}
+
+static float getFruitFleeForce(uint8_t type){
+    switch(type){
+        case fruitApple: return 150.0f;
+        case fruitOrange: return 200.0f;
+        case fruitWatermelon: return 300.0f;
+        default: return 200.0f;
+    }
+    
+}
+
+static const uint8_t* getFruitSprite(uint8_t type){
+    switch(type){
+        case fruitApple: return (uint8_t*)appleSprite;
+        case fruitOrange: return (uint8_t*)orangeSprite;
+        case fruitWatermelon: return (uint8_t*)watermelonSprite;
+        default: base = 1000; return (uint8_t*)appleSprite;
+    }
+    
+}
+
+static uint16_t getFruitHitSound(uint8_t type, uint8_t combo){
+    uint16_t base;
+    switch(type){
+        case fruitApple: base = 900; break;
+        case fruitOrange: base = 1100; break;
+        case fruitWatermelon: base = 700; break;
+        default: base = 1000; break;
+    }
+    
+}
 
 //helper functions
 
@@ -152,86 +254,40 @@ static void playGameOverSound(void){
     
 }
 
-// Frame rate for this game (in milliseconds) - fastest game
-#define GAME3_FRAME_TIME_MS 16  // ~60 FPS (faster than others!)
+// core gameplay
 
-MenuState Game3_Run(void) {
-    // Initialize game state
-    animation_counter = 0;
-    moving_x = 50;
-    moving_y = 50;
-    dx = 2;
-    dy = 2;
-    
-    // Play a brief startup sound
-    buzzer_tone(&buzzer_cfg, 1500, 30);  // 1.5kHz at 30% volume
-    HAL_Delay(50);  // Brief beep duration
-    buzzer_off(&buzzer_cfg);  // Stop the buzzer
-    
-    MenuState exit_state = MENU_STATE_HOME;  // Default: return to menu
-    
-    // Game's own loop - runs until exit condition
-    while (1) {
-        uint32_t frame_start = HAL_GetTick();
-        
-        // Read input
-        Input_Read();
-        
-        // Check if button was pressed to return to menu
-        if (current_input.btn3_pressed) {
-            PWM_SetDuty(&pwm_cfg, 50);  // Reset LED
-            exit_state = MENU_STATE_HOME;
-            break;  // Exit game loop
+static void addTarget(void){
+    for(int i =0; i<maxTargets,i++){
+        if(!game.targets[i].active){
+            continue;
         }
-        
-        // UPDATE: Game logic
-        animation_counter++;
-        
-        // Simple animation: move object diagonally
-        moving_x += dx;
-        moving_y += dy;
-        if (moving_x >= 200 || moving_x <= 0) {
-            dx *= -1;
+        //movements
+        game.targets[i].pos.x += game.targets[i].vel.x *deltaSec;
+        game.targets[i].pos.y += game.targets[i].vel.y *  deltaSec;
+
+        //bounce
+        if(game.targets[i].pos.x < game.targets[i].radius){
+            game.targets[i].pos.x = game.targets[i].radius;
+            game.targets[i].vel.x = -game.targets[i].vel.x
         }
-        if (moving_y >= 200 || moving_y <= 0) {
-            dy *= -1;
+        if(game.targets[i].pos.x > screenWidth - game.targets[i].radius){
+            game.targets[i].pos.x = screenWidth - game.targets[i].radius;
+            game.targets[i].vel.x = -game.targets[i].vel.x;
+            
         }
-        
-        // Example: Vary LED brightness based on distance from origin
-        uint8_t brightness = 30 + ((moving_x + moving_y) * 40) / 400;
-        if (brightness > 100) brightness = 100;
-        PWM_SetDuty(&pwm_cfg, brightness);
-        
-        // RENDER: Draw to LCD
-        LCD_Fill_Buffer(0);
-        
-        // Title
-        LCD_printString("GAME 3", 60, 10, 1, 3);
-        
-        // Simple animated object (moving box, diagonal)
-        LCD_printString("[o]", 20 + moving_x, 50 + moving_y, 1, 3);
-        
-        // Display counter
-        char counter[32];
-        sprintf(counter, "Frame: %lu", animation_counter);
-        LCD_printString(counter, 50, 140, 1, 2);
-        
-        // Show frame rate
-        LCD_printString("Fast Demo", 20, 180, 1, 1);
-        LCD_printString("60 FPS", 20, 195, 1, 1);
-        
-        // Instructions
-        LCD_printString("Press BT3 to", 40, 220, 1, 1);
-        LCD_printString("Return to Menu", 40, 235, 1, 1);
-        
-        LCD_Refresh(&cfg0);
-        
-        // Frame timing - wait for remainder of frame time
-        uint32_t frame_time = HAL_GetTick() - frame_start;
-        if (frame_time < GAME3_FRAME_TIME_MS) {
-            HAL_Delay(GAME3_FRAME_TIME_MS - frame_time);
+        if(game.targets[i].pos.y < game.targets[i].radius){
+            game.targets[i].pos.y = game.targets[i].radius;
+            game.targets[i].vel.y = -game.targets[i].vel.y
+            
         }
+        if(game.targets[i].pos.y > screenHeight - game.targets[i].radius){
+            game.targets[i].pos.y = screenHeight - game.targets[i].radius;
+            game.targets[i].vel.y = -game.targets[i].vel.y;
+            
+        }
+        float dx =
     }
     
-    return exit_state;  // Tell main where to go next
 }
+
+
