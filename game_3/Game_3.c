@@ -27,11 +27,11 @@ extern Joystick_t joystick_data;
 #define longPressMS 500
 
 //fruit types
-typdef enum{
+typedef enum{
     fruitApple,
     fruitOrange,
     fruitWatermelon
-} FruitTpe;
+} FruitType;
 
 
 // game structures
@@ -190,7 +190,7 @@ static const uint8_t* getFruitSprite(uint8_t type){
         case fruitApple: return (uint8_t*)appleSprite;
         case fruitOrange: return (uint8_t*)orangeSprite;
         case fruitWatermelon: return (uint8_t*)watermelonSprite;
-        default: base = 1000; return (uint8_t*)appleSprite;
+        default: return (uint8_t*)appleSprite;
     }
     
 }
@@ -203,7 +203,8 @@ static uint16_t getFruitHitSound(uint8_t type, uint8_t combo){
         case fruitWatermelon: base = 700; break;
         default: base = 1000; break;
     }
-    
+    uint16_t add = (combo>5 ? 5: combo) * 50
+    return base + add;
 }
 
 //helper functions
@@ -216,7 +217,7 @@ static uint32_t randomGen(uint32_t max){
 
 static void startLedFlash(uint32_t durationMS){
     game.ledFlashEnd = HAL_GetTick()+durationMS;
-    PWM_SetDuty(&pwm_cfg,80)
+    PWM_SetDuty(&pwm_cfg,80);
     }
 
 static void updateLedFlash(void){
@@ -229,7 +230,7 @@ static void updateLedFlash(void){
 
 static void playHitSound(uint8_t combo){
     uint16_t frequency = 1000 + (combo*100);
-    if (freq>3000){
+    if (frequency>3000){
         frequency=3000;
     }    
     buzzer_tone(&buzzer_cfg,frequency,30);
@@ -250,13 +251,21 @@ static void playGameOverSound(void){
     buzzer_off(&buzzer_cfg);
     buzzer_tone(&buzzer_cfg,100,30);
     HAL_Delay(500);
-    buzzeer_off(&buzzer_cfg);
+    buzzer_off(&buzzer_cfg);
     
 }
 
 // core gameplay
 
 static void addTarget(void){
+    
+    
+}
+
+static void updateGame(float deltaSec){
+    if(game.state != statePlaying){
+        return;
+    }
     for(int i =0; i<maxTargets,i++){
         if(!game.targets[i].active){
             continue;
@@ -285,9 +294,26 @@ static void addTarget(void){
             game.targets[i].vel.y = -game.targets[i].vel.y;
             
         }
-        float dx =
+        //fleeing
+        float dx = game.targets[i].pos.x - game.crosshair.x;
+        float dy = game.targets[i].pos.y - game.crosshair.y;
+        float distance = sqrtf(dx**2 + dy**2);
+        float fleeDistance = (game.targets[i].type == fruitWatermelon) ? 70.0f: 50.0f;
+        if(distance<fleeDistance && distance > 0.1f){
+            float awayx=dx/distance;
+            float awayy = dy/distance;
+            float force = getFruitFleeForce(game.targets[i].type);
+            game.targets[i].vel.x +=awayx*force* deltaSec;
+            game.targets[i].vel.y =awayy*force*deltaSec;
+            float maxSpeed = baseSpeed * game.gameSpeed * 2.0f;
+            float speed = sqrtf(game.targets[i].vel.x**2+game.targets[i].vel.y**2);
+            if(speed>maxSpeed){
+                game.targets[i].vel.x =  game.targets[i].vel.x/speed*maxSpeed;
+                game.targets[i].vel.y =  game.targets[i].vel.y/speed*maxSpeed;
+            }
+        }
     }
-    
+
 }
 
 
