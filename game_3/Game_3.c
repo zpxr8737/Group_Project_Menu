@@ -266,7 +266,7 @@ static void updateGame(float deltaSec){
     if(game.state != statePlaying){
         return;
     }
-    for(int i =0; i<maxTargets,i++){
+    for(int i =0; i<maxTargets;i++){
         if(!game.targets[i].active){
             continue;
         }
@@ -277,7 +277,7 @@ static void updateGame(float deltaSec){
         //bounce
         if(game.targets[i].pos.x < game.targets[i].radius){
             game.targets[i].pos.x = game.targets[i].radius;
-            game.targets[i].vel.x = -game.targets[i].vel.x
+            game.targets[i].vel.x = -game.targets[i].vel.x;
         }
         if(game.targets[i].pos.x > screenWidth - game.targets[i].radius){
             game.targets[i].pos.x = screenWidth - game.targets[i].radius;
@@ -286,7 +286,7 @@ static void updateGame(float deltaSec){
         }
         if(game.targets[i].pos.y < game.targets[i].radius){
             game.targets[i].pos.y = game.targets[i].radius;
-            game.targets[i].vel.y = -game.targets[i].vel.y
+            game.targets[i].vel.y = -game.targets[i].vel.y;
             
         }
         if(game.targets[i].pos.y > screenHeight - game.targets[i].radius){
@@ -297,7 +297,7 @@ static void updateGame(float deltaSec){
         //fleeing
         float dx = game.targets[i].pos.x - game.crosshair.x;
         float dy = game.targets[i].pos.y - game.crosshair.y;
-        float distance = sqrtf(dx**2 + dy**2);
+        float distance = sqrtf(dx*dx + dy*dy);
         float fleeDistance = (game.targets[i].type == fruitWatermelon) ? 70.0f: 50.0f;
         if(distance<fleeDistance && distance > 0.1f){
             float awayx=dx/distance;
@@ -306,7 +306,7 @@ static void updateGame(float deltaSec){
             game.targets[i].vel.x +=awayx*force* deltaSec;
             game.targets[i].vel.y =awayy*force*deltaSec;
             float maxSpeed = baseSpeed * game.gameSpeed * 2.0f;
-            float speed = sqrtf(game.targets[i].vel.x**2+game.targets[i].vel.y**2);
+            float speed = sqrtf(game.targets[i].vel.x*game.targets[i].vel.x+game.targets[i].vel.y*game.targets[i].vel.y);
             if(speed>maxSpeed){
                 game.targets[i].vel.x =  game.targets[i].vel.x/speed*maxSpeed;
                 game.targets[i].vel.y =  game.targets[i].vel.y/speed*maxSpeed;
