@@ -400,6 +400,38 @@ static void updateGame(float deltaSec){
         }
     }
 
+    //difficulty programming
+    if(game.score>0){
+        float newSpeed = 1.0f +(game.score/200.0f);
+        if(newSpeed>3.0f){
+            newSpeed=3.0f;
+        }
+        game.gameSpeed=newSpeed;
+    }
+
+//add more targets
+    if(game.score >=150&& game.targetCount<2){
+        game.targetCount = 2;
+        addTarget();
+    }
+    if(game.score >= 300 && game.targetCount<3){
+        game.targetCount=3;
+        addTarget();
+    }
+    if(game.score >= 500 && game.targetCount<4){
+        game.targetCount = 4;
+        addTarget();
+    }
+
+    if(game.lives==0){
+        game.state= stateGameOver;
+        playGameOverSound();
+        updateHighScore();
+        startLedFlash(500);
+        
+    }
+
+
 }
 
 
