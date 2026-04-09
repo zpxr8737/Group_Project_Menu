@@ -56,4 +56,4 @@ typedef struct {
  */
 MenuState Game2_Run(void);
 
-#endif // GAME_2_H
+#endif // GAME_2_H 
