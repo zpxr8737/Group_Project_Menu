@@ -301,7 +301,52 @@ static void updateHighScore(void){
         game.highScore = game.score;
     }
 }
+static void handleShot(Vector2D shotPos){
+    if(game.state != statePlaying){
+        return;
+    }
+    int hit = 0;
+    for(int i =0; i<game.targetCount;i++){
+        if(!game.targets[i].active){
+            continue;
+        }
+        float dx = shotPos.x - game.targets[i].pos.x;
+        float dy = shotPos.y - game.targets[i].pos.y;
+        float distance = sqrtf(dx*dx+dy*dy);
+        if(distance<game.targets[i].radius){
+            hit=1;
+            game.targets[i].active = 0;
+            game.targets[i].hitFlashEnd = HAL_GetTick()+100;
 
+            //combo
+            uint32_t now = HAL_GetTick();
+            if((now-game.lastHitTime)<comboTimeMS){
+                game.combo++;
+            }
+            else{
+                game.combo = 1;
+            }
+
+            game.lastHitTime = now;
+            if(game.combo >5){
+                game.combo = 5;
+            }
+            uint16_t addScore = getFruitScore(game.targets[i].type)*game.combo;
+            game.score += addScore;
+            playHitSound(game.targets[i].type,game.combo);
+            startLedFlash(50);
+            addTarget();
+            break;
+        }
+    }
+    if(!hit && game.lives>0){
+        game.lives--;
+        game.combo = 0;
+        playMissSound();
+        startLedFlash(100);
+    }
+
+}
 
 static void updateGame(float deltaSec){
     if(game.state != statePlaying){
