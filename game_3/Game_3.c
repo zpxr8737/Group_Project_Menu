@@ -258,9 +258,50 @@ static void playGameOverSound(void){
 // core gameplay
 
 static void addTarget(void){
+    for (int i=0; i<maxTargets; i++){
+        if(!game.targets[i].active){
+            game.targets[i].active = 1;
+            game.targets[i].type = randomGen(3);
+            game.targets[i].radius = getFruitRadius(game.targets[i].type);
+            game.targets[i].pos.x = randomGen(screenWidth - 2*game.targets[i].radius)+game.targets[i].radius;
+            game.targets[i].pos.y = randomGen(screenHeight - 2*game.targets[i].radius)+game.targets[i].radius;
+            float angle = randomGen(360)*(M_PI/180.0f);
+            float speed = baseSpeed * game.gameSpeed;
+            game.targets[i].vel.x = cosf(angle)*speed;
+            game.targets[i].vel.y=sinf(angle)*speed;
+            game.targets[i].hitFlashEnd = 0;
+            break;
+        }
+    }
     
     
 }
+
+static void resetGame(void){
+    game.state=statePlaying;
+    game.targetCount = 1;
+    game.score= 0;
+    game.lives=3;
+    game.combo = 0;
+    game.lastHitTime = 0;
+    game.gameSpeed = 1.0f;
+    game.sensitivity = 0.8f;
+    game.crosshair.x = screenWidth/2;
+    game.crosshair.y = screenHeight/2;
+    game.ledFlashEnd=0;
+    PWM_SetDuty(&pwm_cfg,0);
+    for(int i =0; i< maxTargets;i++){
+        game.targets[i].active=0;
+    }
+    addTarget();
+}
+
+static void updateHighScore(void){
+    if(game.score>game.highScore){
+        game.highScore = game.score;
+    }
+}
+
 
 static void updateGame(float deltaSec){
     if(game.state != statePlaying){
