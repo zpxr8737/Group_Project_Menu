@@ -230,7 +230,7 @@ static void updateLedFlash(void){
 
 static void playHitSound(uint8_t type, uint8_t combo){
     uint16_t frequency = getFruitHitSound(type, combo);
-    if (frequency > 3000) freq = 3000;
+    if (frequency > 3000) frequency = 3000;
     buzzer_tone(&buzzer_cfg, frequency, 30);
     HAL_Delay(30);
     buzzer_off(&buzzer_cfg);
@@ -349,7 +349,7 @@ static void updateGame(float deltaSec){
     if(game.state != statePlaying){
         return;
     }
-    for(int i =0; i<maxTargets;i++){
+    for(int i =0; i<game.targetCount;i++){
         if(!game.targets[i].active){
             continue;
         }
@@ -432,20 +432,24 @@ static void updateGame(float deltaSec){
 }
 
 static void drawGame(void){
-    LCD_Draw_Sprite((uint16_t)(game.crosshair.x-8),(uint16_t)(game.crosshair.y-8),16,16,(uint8_t)crosshairSprite);
+    LCD_Draw_Sprite((uint16_t)(game.crosshair.x-8), (uint16_t)(game.crosshair.y-8), 16, 16, (uint8_t*)crosshairSprite);
 
     //targets
     for(int i = 0; i<game.targetCount;i++){
-        if(!game.targets[i].active)(
+        if(!game.targets[i].active){
             continue;
-        )
+        }
         const uint8_t* sprite = getFruitSprite(game.targets[i].type);
         if(game.targets[i].hitFlashEnd && HAL_GetTick() < game.targets[i].hitFlashEnd){
-            LCD_Draw_Sprite_Colour((uint16_t)(game.targets[i].pos.x-8),(uint16_t)(game.targets[i].pos.y - 8),16,16,sprite);
+            LCD_Draw_Sprite_Colour((uint16_t)(game.targets[i].pos.x-8),(uint16_t)(game.targets[i].pos.y - 8),16,16,sprite,1);
+        }
+        else{
+            LCD_Draw_Sprite((uint16_t)(game.targets[i].pos.x-8), (uint16_t)(game.targets[i].pos.y-8), 16, 16, sprite);
         }
     }
+}
     char buf[32];
-    sprint(buf,"Score: %d", game.score);
+    sprintf(buf,"Score: %d", game.score);
     LCD_printString(buf,10,10,1,2);
     sprintf(buf, "Lives: %d", game.lives);
     LCD_printString(buf, 180, 10, 1, 2);
@@ -500,11 +504,11 @@ MenuState Game3_run(void){
 
         Input_Read();
         Joystick_Read(&joystick_cfg, &joystick_data);
-        userInput joyInput = Joystick_GetInput(&joystick_data);
+        UserInput joyInput = Joystick_GetInput(&joystick_data);
 
         uint8_t buttonPressed = current_input.btn3_pressed;
 
-        if(buttonPressed && !buttonWasPRessed){
+        if(buttonPressed && !buttonWasPressed){
             buttonPressStart = now;
             buttonWasPressed = 1;
             
@@ -560,6 +564,7 @@ MenuState Game3_run(void){
                 if(game.sensitivity <0){
                     game.sensitivity =0;
                 }
+            }
             if(joyInput.direction == EAST){
                 game.sensitivity +=0.05f;
                 if(game.sensitivity>1){
@@ -568,7 +573,7 @@ MenuState Game3_run(void){
             }
                 
             }
-        }
+        
             if(game.state == statePlaying){
                 updateGame(deltaSec);
             }
@@ -590,4 +595,5 @@ MenuState Game3_run(void){
         
             
     }
+}
 }
