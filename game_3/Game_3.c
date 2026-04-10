@@ -447,7 +447,7 @@ static void drawGame(void){
             LCD_Draw_Sprite((uint16_t)(game.targets[i].pos.x-8), (uint16_t)(game.targets[i].pos.y-8), 16, 16, sprite);
         }
     }
-}
+
     char buf[32];
     sprintf(buf,"Score: %d", game.score);
     LCD_printString(buf,10,10,1,2);
@@ -485,7 +485,7 @@ static void drawGame(void){
 
 //main code
 
-MenuState Game3_run(void){
+MenuState Game3_Run(void){
     resetGame();
 
     buzzer_tone(&buzzer_cfg, 1500, 30);
