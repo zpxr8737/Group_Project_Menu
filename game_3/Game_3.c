@@ -553,7 +553,7 @@ MenuState Game3_Run(void){
                 game.state = statePaused;
             }
             else if(game.state==statePaused){
-                game.state=statePlaying;
+                return MENU_STATE_HOME;
             }
             else if(game.state==stateGameOver){
                 PWM_SetDuty(&pwm_cfg, 0);
