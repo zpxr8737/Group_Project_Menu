@@ -11,7 +11,8 @@
  * This header declares the main game function for a first-person car shooting game.
  * The player moves a car along a track using buttons, shoots targets (fruit sprites),
  * and receives sound feedback via a buzzer for shooting and hitting targets.
- * The game is designed to be RAM-efficient, drawing only updated objects directly to the LCD.
+ * The game is designed to be RAM-efficient, drawing/erasing only updated objects directly to the LCD
+ * (no full screen clears), with frame timing to maintain ~20 FPS.
  */
 
 // Frame rate (milliseconds per frame)
@@ -45,7 +46,8 @@ typedef struct {
  * - Reading button input for car movement and shooting
  * - Updating bullet and fruit positions
  * - Checking collisions between bullets and fruits
- * - Drawing the car, bullets, and fruits directly to the LCD
+ * - Drawing/erasing the car, bullets, and fruits directly to the LCD
+ * - Refreshing the LCD display and enforcing frame timing
  * - Playing sound effects through the buzzer
  * - Displaying score and instructions
  * 

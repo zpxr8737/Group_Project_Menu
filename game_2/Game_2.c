@@ -85,6 +85,9 @@ MenuState Game2_Run(void) {
     InitFruits();
     for (int i = 0; i < MAX_BULLETS; i++) bullets[i].active = 0;
 
+    // Draw track boundaries once
+    LCD_drawRect(30, 0, SCREEN_WIDTH - 60, SCREEN_HEIGHT, 1);
+
     MenuState exit_state = MENU_STATE_HOME;
 
     while (1) {
@@ -101,6 +104,8 @@ MenuState Game2_Run(void) {
 
         // Move car left/right
         int16_t old_car_x = car_x;
+        // Erase old car position
+        LCD_drawRect(old_car_x - 6, car_y, 12, 12, 0);
         if (current_input.btn_left) car_x -= car_speed;
         if (current_input.btn_right) car_x += car_speed;
         if (car_x < 10) car_x = 10;
@@ -164,7 +169,7 @@ MenuState Game2_Run(void) {
         }
 
         // Draw track boundaries (only once is fine, or could redraw)
-        LCD_drawRect(30, 0, SCREEN_WIDTH - 60, SCREEN_HEIGHT, 1);
+        // LCD_drawRect(30, 0, SCREEN_WIDTH - 60, SCREEN_HEIGHT, 1);  // Moved outside loop
 
         // Draw car
         LCD_printString("A", car_x - 4, car_y, 1, 3);  // Simple car sprite
@@ -198,6 +203,9 @@ MenuState Game2_Run(void) {
         LCD_printString("Left/Right: Move", 10, SCREEN_HEIGHT - 40, 1, 1);
         LCD_printString("BTN1: Shoot", 10, SCREEN_HEIGHT - 25, 1, 1);
         LCD_printString("BTN3: Exit", 10, SCREEN_HEIGHT - 10, 1, 1);
+
+        // Refresh LCD to display changes
+        LCD_Refresh(&cfg0);
 
         // Frame timing
         uint32_t frame_time = HAL_GetTick() - frame_start;
