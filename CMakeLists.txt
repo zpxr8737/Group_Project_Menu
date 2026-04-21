@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.20)
 
 #
 # This file is generated only once,
@@ -58,6 +58,11 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/game_1/Game_1.c
     ${CMAKE_SOURCE_DIR}/game_2/Game_2.c
     ${CMAKE_SOURCE_DIR}/game_3/Game_3.c
+    ${CMAKE_SOURCE_DIR}/game_1/RaceEngine.c
+    ${CMAKE_SOURCE_DIR}/game_1/Track.c
+    ${CMAKE_SOURCE_DIR}/game_1/Car.c
+    ${CMAKE_SOURCE_DIR}/shared/sprites.c
+
 )
 
 # Add include paths
