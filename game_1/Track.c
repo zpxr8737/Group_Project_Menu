@@ -382,7 +382,7 @@ void track_draw(float player_x) {
         int16_t y0 = screen_y - sprite_h;
 
         LCD_Draw_Sprite_Scaled((uint16_t)x0, (uint16_t)y0, FRUIT_SPRITE_H, FRUIT_SPRITE_W, fruit_sprites[fruits[t].fruit_type], scale);
-    }    
+    }
 }
 
 float track_get_curvature(void) {
