@@ -31,7 +31,7 @@ static float sC[MAX_SEGS];          // curvature value per segment
 static int32_t num_segs = 0;           // segments built in current track
 
 // Fruit sprites
-static const uint8_t * const fruit_sprites[3] = {(const uint8_t *)APPLE,(const uint8_t *)ORANGE, (const uint8_t *)WATERMELON};
+static const uint8_t * const fruit_sprites[3] = {(const uint8_t *)appleSprite,(const uint8_t *)orangeSprite, (const uint8_t *)watermelonSprite};
 
 // Curvature at the player's current segment
 // Set once per frame before the scanline loop
@@ -135,8 +135,7 @@ static inline void draw_hstrip(int16_t x_start, int16_t y, int16_t width, uint8_
 }
 
 // Called in race_engine_init()
-void track_init(void)
-{
+void track_init(void) {
     state.camera_z = 0.0f;
     state.speed = 0.0f;
     state.is_accelerating = 0;
@@ -155,8 +154,7 @@ void track_init(void)
 }
 
 // Check for fruit collision every frame
-static void track_update_collision(float player_x)
-{
+static void track_update_collision(float player_x) {
     if (num_segs == 0) return;
 
     // Check the segment immediately ahead
@@ -388,8 +386,7 @@ void track_draw(float player_x) {
         int16_t y0 = screen_y - sprite_h;
 
         LCD_Draw_Sprite_Scaled((uint16_t)x0, (uint16_t)y0, FRUIT_SPRITE_H, FRUIT_SPRITE_W, fruit_sprites[fruits[t].fruit_type], scale);
-    }    
-
+    }
 }
 
 float track_get_curvature(void) {
