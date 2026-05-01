@@ -14,7 +14,6 @@ extern ST7789V2_cfg_t cfg0;
 extern Buzzer_cfg_t buzzer_cfg;
 extern Joystick_cfg_t joystick_cfg;
 extern Joystick_t joystick_data;
-extern const uint8_t CAR_STRAIGHT[64][64];
  
 // game state
 static int16_t car_x = SCREEN_WIDTH / 2;
