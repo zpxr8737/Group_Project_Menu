@@ -18,7 +18,7 @@ extern const uint8_t CAR_STRAIGHT[64][64];
  
 // game state
 static int16_t car_x = SCREEN_WIDTH / 2;
-static int16_t car_y = SCREEN_HEIGHT - 32;
+static int16_t car_y = SCREEN_HEIGHT - 100;
 static int16_t car_speed = 5;
  
 static Bullet bullets[MAX_BULLETS];
