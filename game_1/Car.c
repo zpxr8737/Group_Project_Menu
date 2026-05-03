@@ -54,7 +54,7 @@ void car_update(Car_t *car, UserInput input, uint32_t dt_ms) {
 void car_draw(Car_t *car) {
     uint8_t *sprite;
 
-    // Draw sprite based on lateral direction
+    // Draw sprite based on direction
     switch (steer) {
     case LEFT:
         sprite = (uint8_t *)CAR_LEFT;

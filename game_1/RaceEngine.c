@@ -17,7 +17,7 @@ extern Joystick_t joystick_data;
 // Intro screen
 static void display_intro(void) {
     // How to play
-    LCD_Fill_Buffer(12);   // colour index 12 = background
+    LCD_Fill_Buffer(12);
 
     char strings[10][25] = { 
         "HOW TO PLAY:", 

@@ -159,14 +159,14 @@ static void track_update_collision(float player_x) {
     int32_t check_seg = (player_seg + 1) % num_segs;
 
     for (int32_t t = 0; t < num_fruits; t++) {
-        if (fruits[t].collected)          continue;   // already collected
+        if (fruits[t].collected) continue;   // already collected
         if (fruits[t].seg_idx != check_seg) continue; // not on this segment
 
-        // Lateral collision - compare normalised positions of player and fruit (with scaler)
+        // Compare normalised positions of player and fruit (with scaler)
         float fruit_x = (float)fruits[t].lane * FRUIT_LANE_OFFSET;
-        float dist = player_x - fruit_x;
+        float dist = player_x - fruit_x; // absolute value
 
-        // Threshold within 0.3 to collect
+        // Hitbox of 0.3 normalised units
         if (abs(dist) < 0.30f) {
             fruits[t].collected = 1;
             fruits_collected++;
@@ -190,6 +190,7 @@ static void track_update_lap(void) {
     if (new_lap > current_lap) {
         // Record completed lap time
         uint32_t completed_lap_ms = HAL_GetTick() - lap_start_ms;
+        
         if (best_lap_ms == 0 || completed_lap_ms < best_lap_ms)
             best_lap_ms = completed_lap_ms;      // save fastest lap time
 

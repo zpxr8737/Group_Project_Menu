@@ -34,7 +34,7 @@ MenuState Game1_Run(void) {
     // Race engine init
     race_engine_init(&race_engine);    
 
-    // Game's own loop - runs until exit condition
+    // Game loop runs until exit condition
     while (track_is_race_complete() != 1) {
         uint32_t frame_start = HAL_GetTick();
         
@@ -79,7 +79,7 @@ MenuState Game1_Run(void) {
         sprintf(best_lap_str, "BEST LAP: %02lu:%02lu", best_secs, best_frac);
         sprintf(fruit_str, "FRUITS: %ld/%ld", collected, total);
 
-        LCD_Fill_Buffer(12);   // colour index 12 = background
+        LCD_Fill_Buffer(12);
 
         // RACE COMPLETE
         uint16_t title_x = (SCREEN_WIDTH - (uint16_t)(strlen(title_str) * 6 * 2)) / 2;
